@@ -6,6 +6,8 @@ from bs4 import BeautifulSoup
 
 
 PROXY_URL = ''
+AREA_CODES = ['980', '704']
+FILTER_BY_AREA_CODE = True
 
 
 class PeoplefinderSpider(scrapy.Spider):
@@ -17,6 +19,9 @@ class PeoplefinderSpider(scrapy.Spider):
         self.start_url = PROXY_URL + 'http://peoplefinder.com/reverse-phone-search/'
         phone_numbers = pd.read_csv('source_files/phone_numbers.csv', header=None)
         phone_numbers.columns = ['Phone Numbers']
+        if FILTER_BY_AREA_CODE:
+            phone_numbers = phone_numbers[phone_numbers['Phone Numbers'].apply(lambda x:
+                    x[1:4] == '980' or x[1:4] == '704')]
         self.parsed_phone_numbers = phone_numbers['Phone Numbers'].apply(
                 lambda s: re.sub(r'\(|\)|\ |-', '', s)
                 )
