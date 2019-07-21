@@ -33,7 +33,7 @@ class PeoplefinderSpider(scrapy.Spider):
 
     def parse_search_results(self, response):
         single_result = response.xpath('//li[contains(@class, "detailUserInfoWrapper")]')
-        # TODO: This only works for peoplefinder and zabasearch
+        # TODO: This only works for peoplefinder, truepeoplesearch and zabasearch
         phone = re.findall('[0-9]{10}', response.url)[0]
         if single_result:
             item = {}
