@@ -5,13 +5,16 @@ import scrapy
 from bs4 import BeautifulSoup
 
 
+PROXY_URL = ''
+
+
 class PeoplefinderSpider(scrapy.Spider):
     name = 'peoplefinder'
     # allowed_domains = ['peoplefinder.com']
     start_urls = ['http://peoplefinder.com/']
 
     def __init__(self):
-        self.start_url = 'http://peoplefinder.com/reverse-phone-search/'
+        self.start_url = PROXY_URL + 'http://peoplefinder.com/reverse-phone-search/'
         phone_numbers = pd.read_csv('source_files/phone_numbers.csv', header=None)
         phone_numbers.columns = ['Phone Numbers']
         self.parsed_phone_numbers = phone_numbers['Phone Numbers'].apply(
@@ -25,16 +28,28 @@ class PeoplefinderSpider(scrapy.Spider):
             yield response.follow(next_page_url, self.parse_search_results)
 
     def parse_search_results(self, response):
-        search_results = response.xpath(
-                '//div[contains(@class, "ticklerResultsWrapper")]/
-                div[contains(@class, "ticklerResultsData")]'
-                )
-        if search_results:
-            for result in search_results:
-                person_details = self.parse_person_details(result)
-                yield person_details
+        single_result = response.xpath('//li[contains(@class, "detailUserInfoWrapper")]')
+        if single_result:
+            item = {}
+            item['Phone'] = self.phone_number
+            item['Name'] = response.xpath(
+                    '//div[contains(@class, "detail-user-info")]/span[contains(@class, "detailNameHilite")]/text()'
+                    ).get()
+            item['Address'] = ', '.join(
+                    response.xpath('//div[contains(@class, "detail-user-info")]/text()').extract()
+                    )
+            yield item
         else:
-            print('No result found')
+            search_results = response.xpath(
+                    '//div[contains(@class, "ticklerResultsWrapper")]/'
+                    'div[contains(@class, "ticklerResultsData")]'
+                    )
+            if search_results:
+                for result in search_results:
+                    person_details = self.parse_person_details(result)
+                    yield person_details
+            else:
+                print('No result found')
 
     def parse_person_details(self, result):
         item = {}
