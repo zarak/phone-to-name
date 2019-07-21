@@ -28,15 +28,16 @@ class PeoplefinderSpider(scrapy.Spider):
 
     def parse(self, response):
         for number in self.parsed_phone_numbers:
-            self.phone_number = number
             next_page_url = self.start_url + number
             yield response.follow(next_page_url, self.parse_search_results)
 
     def parse_search_results(self, response):
         single_result = response.xpath('//li[contains(@class, "detailUserInfoWrapper")]')
+        # TODO: This only works for peoplefinder and zabasearch
+        phone = re.findall('[0-9]{10}', response.url)[0]
         if single_result:
             item = {}
-            item['Phone'] = self.phone_number
+            item['Phone'] = phone
             item['Name'] = response.xpath(
                     '//div[contains(@class, "detail-user-info")]/span[contains(@class, "detailNameHilite")]/text()'
                     ).get()
@@ -51,14 +52,14 @@ class PeoplefinderSpider(scrapy.Spider):
                     )
             if search_results:
                 for result in search_results:
-                    person_details = self.parse_person_details(result)
+                    person_details = self.parse_person_details(result, phone)
                     yield person_details
             else:
                 print('No result found')
 
-    def parse_person_details(self, result):
+    def parse_person_details(self, result, phone):
         item = {}
-        item['Phone'] = self.phone_number
+        item['Phone'] = phone
         item['Name'] = result.xpath(
                 'div//span[contains(@class, "ticklerResultsName")]/a/text()'
                 ).get()
